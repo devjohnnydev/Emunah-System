@@ -118,6 +118,9 @@ if is_production:
         transaction_date = db.Column(db.Date, default=date.today)
         created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
+    with app.app_context():
+        db.create_all()
+
     @app.route('/api/health')
     def health():
         return jsonify({'status': 'ok'})
