@@ -8,6 +8,14 @@ import time
 basedir = os.path.abspath(os.path.dirname(__file__))
 static_folder_path = os.path.join(basedir, 'dist', 'public')
 
+if not os.path.exists(static_folder_path):
+    static_folder_path = '/app/dist/public'
+if not os.path.exists(static_folder_path):
+    static_folder_path = 'dist/public'
+
+print(f"Static folder path: {static_folder_path}", flush=True)
+print(f"Static folder exists: {os.path.exists(static_folder_path)}", flush=True)
+
 app = Flask(__name__, static_folder=static_folder_path, static_url_path='')
 
 database_url = os.environ.get('DATABASE_URL')
@@ -467,9 +475,17 @@ def get_dashboard_stats():
 @app.route('/', defaults={'path': ''})
 @app.route('/<path:path>')
 def serve(path):
-    if path and os.path.exists(os.path.join(app.static_folder, path)):
-        return send_from_directory(app.static_folder, path)
-    return send_from_directory(app.static_folder, 'index.html')
+    try:
+        if not app.static_folder or not os.path.exists(app.static_folder):
+            return jsonify({'error': 'Static folder not found', 'path': app.static_folder}), 500
+        if path and os.path.exists(os.path.join(app.static_folder, path)):
+            return send_from_directory(app.static_folder, path)
+        index_path = os.path.join(app.static_folder, 'index.html')
+        if os.path.exists(index_path):
+            return send_from_directory(app.static_folder, 'index.html')
+        return jsonify({'error': 'index.html not found', 'static_folder': app.static_folder}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
