@@ -7,24 +7,31 @@ import time
 
 basedir = os.path.abspath(os.path.dirname(__file__))
 
+cwd = os.getcwd()
+
 possible_static_paths = [
     os.path.join(basedir, 'dist', 'public'),
-    '/app/dist/public',
-    'dist/public',
+    os.path.join(cwd, 'dist', 'public'),
+    os.path.join(basedir, 'build'),
+    os.path.join(cwd, 'build'),
     os.path.join(basedir, 'public'),
-    '/app/public',
-    'public',
+    os.path.join(cwd, 'public'),
+    os.path.join(basedir, 'dist'),
+    os.path.join(cwd, 'dist'),
 ]
 
 static_folder_path = None
 for path in possible_static_paths:
-    if os.path.exists(path) and os.path.isdir(path):
-        static_folder_path = path
+    abs_path = os.path.abspath(path)
+    index_path = os.path.join(abs_path, 'index.html')
+    if os.path.exists(index_path):
+        static_folder_path = abs_path
         break
 
 if static_folder_path is None:
     static_folder_path = os.path.join(basedir, 'dist', 'public')
     os.makedirs(static_folder_path, exist_ok=True)
+    print(f"Static folder created: {static_folder_path}", flush=True)
 
 print(f"Static folder path: {static_folder_path}", flush=True)
 print(f"Static folder exists: {os.path.exists(static_folder_path)}", flush=True)

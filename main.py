@@ -14,13 +14,12 @@ print(f"cwd: {cwd}", flush=True)
 possible_static_paths = [
     os.path.join(basedir, 'dist', 'public'),
     os.path.join(cwd, 'dist', 'public'),
-    '/app/dist/public',
-    'dist/public',
-    './dist/public',
+    os.path.join(basedir, 'build'),
+    os.path.join(cwd, 'build'),
     os.path.join(basedir, 'public'),
     os.path.join(cwd, 'public'),
-    '/app/public',
-    'public',
+    os.path.join(basedir, 'dist'),
+    os.path.join(cwd, 'dist'),
 ]
 
 static_folder_path = None
@@ -31,10 +30,12 @@ for path in possible_static_paths:
     print(f"Checking: {abs_path} -> index.html exists: {exists}", flush=True)
     if exists and static_folder_path is None:
         static_folder_path = abs_path
+        break
 
 if static_folder_path is None:
     static_folder_path = os.path.join(basedir, 'dist', 'public')
-    print(f"No static folder found, using default: {static_folder_path}", flush=True)
+    os.makedirs(static_folder_path, exist_ok=True)
+    print(f"Static folder created: {static_folder_path}", flush=True)
 
 is_production = os.path.exists(os.path.join(static_folder_path, 'index.html'))
 
