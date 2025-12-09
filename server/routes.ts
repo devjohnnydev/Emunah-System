@@ -105,6 +105,17 @@ export async function registerRoutes(
     }
   });
 
+  app.post("/api/prints/upload", async (req, res) => {
+    try {
+      const timestamp = Date.now();
+      const placeholderUrl = `/uploads/print_${timestamp}.png`;
+      res.json({ url: placeholderUrl });
+    } catch (error) {
+      console.error("Error uploading print:", error);
+      res.status(500).json({ error: "Failed to upload print" });
+    }
+  });
+
   app.get("/api/quotes", async (_req, res) => {
     try {
       const result = await db.select().from(quotes);
