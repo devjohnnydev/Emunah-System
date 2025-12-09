@@ -5,7 +5,10 @@ from sqlalchemy import text
 from datetime import datetime, date
 import json
 
-app = Flask(__name__, static_folder='dist/public', static_url_path='')
+basedir = os.path.abspath(os.path.dirname(__file__))
+static_folder_path = os.path.join(basedir, 'dist', 'public')
+
+app = Flask(__name__, static_folder=static_folder_path, static_url_path='')
 
 database_url = os.environ.get('DATABASE_URL')
 if database_url and database_url.startswith('postgres://'):
