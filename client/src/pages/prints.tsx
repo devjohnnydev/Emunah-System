@@ -1,62 +1,34 @@
 import { Layout } from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Search, Plus, Image as ImageIcon, Link as LinkIcon, Upload, Trash2, ExternalLink, Palette as PaletteIcon } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { getPrints } from "@/lib/api";
+import { Search, Plus, Link as LinkIcon, Upload, Trash2, ExternalLink, Palette as PaletteIcon, Loader2 } from "lucide-react";
 import { useState } from "react";
-
-const prints = [
-  {
-    id: 1,
-    name: "Leão de Judá - Minimalista",
-    technique: "Silk Screen",
-    colors: 1,
-    imageUrl: "https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?auto=format&fit=crop&q=80&w=400",
-    tags: ["Religioso", "Minimalista", "Animais"]
-  },
-  {
-    id: 2,
-    name: "Cruz Floral",
-    technique: "DTG",
-    colors: "Full Color",
-    imageUrl: "https://images.unsplash.com/photo-1544967082-d9d3fdd01a1c?auto=format&fit=crop&q=80&w=400",
-    tags: ["Floral", "Feminino", "Cruz"]
-  },
-  {
-    id: 3,
-    name: "Versículo Salmos 23",
-    technique: "Transfer",
-    colors: 2,
-    imageUrl: "https://images.unsplash.com/photo-1543360885-84065275e3c8?auto=format&fit=crop&q=80&w=400",
-    tags: ["Tipografia", "Bíblico"]
-  },
-  {
-    id: 4,
-    name: "Logo Juventude 2024",
-    technique: "Silk Screen",
-    colors: 3,
-    imageUrl: "https://images.unsplash.com/photo-1626544827763-d516dce335ca?auto=format&fit=crop&q=80&w=400",
-    tags: ["Eventos", "Logo"]
-  }
-];
 
 export default function Prints() {
   const [isAddingPrint, setIsAddingPrint] = useState(false);
+  
+  const { data: prints, isLoading } = useQuery({
+    queryKey: ['/api/prints'],
+    queryFn: getPrints
+  });
 
   return (
     <Layout>
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-serif font-bold text-foreground">Estampas</h1>
+          <h1 className="text-3xl font-serif font-bold text-foreground" data-testid="text-prints-title">Estampas</h1>
           <p className="text-muted-foreground">Biblioteca de artes e arquivos de produção.</p>
         </div>
         
         <Dialog open={isAddingPrint} onOpenChange={setIsAddingPrint}>
           <DialogTrigger asChild>
-            <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
+            <Button className="bg-primary text-primary-foreground hover:bg-primary/90" data-testid="button-new-print">
               <Plus className="mr-2 h-4 w-4" /> Nova Estampa
             </Button>
           </DialogTrigger>
@@ -71,7 +43,7 @@ export default function Prints() {
             <div className="grid gap-4 py-4">
               <div className="grid gap-2">
                 <Label htmlFor="name">Nome da Estampa</Label>
-                <Input id="name" placeholder="Ex: Leão de Judá 2025" />
+                <Input id="name" placeholder="Ex: Leão de Judá 2025" data-testid="input-print-name" />
               </div>
               
               <Tabs defaultValue="upload" className="w-full">
@@ -94,7 +66,7 @@ export default function Prints() {
                   <div className="grid gap-2">
                     <Label htmlFor="url">Link da Imagem</Label>
                     <div className="flex gap-2">
-                      <Input id="url" placeholder="https://..." />
+                      <Input id="url" placeholder="https://..." data-testid="input-print-url" />
                       <Button variant="outline" size="icon">
                         <LinkIcon className="h-4 w-4" />
                       </Button>
@@ -109,18 +81,18 @@ export default function Prints() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="grid gap-2">
                   <Label htmlFor="technique">Técnica</Label>
-                  <Input id="technique" placeholder="Ex: Silk Screen" />
+                  <Input id="technique" placeholder="Ex: Silk Screen" data-testid="input-print-technique" />
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="colors">Cores</Label>
-                  <Input id="colors" placeholder="Ex: 4 cores / Cromia" />
+                  <Input id="colors" placeholder="Ex: 4 cores / Cromia" data-testid="input-print-colors" />
                 </div>
               </div>
             </div>
 
             <DialogFooter>
               <Button variant="outline" onClick={() => setIsAddingPrint(false)}>Cancelar</Button>
-              <Button onClick={() => setIsAddingPrint(false)}>Salvar Estampa</Button>
+              <Button onClick={() => setIsAddingPrint(false)} data-testid="button-save-print">Salvar Estampa</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -133,50 +105,68 @@ export default function Prints() {
             type="search"
             placeholder="Buscar estampa..."
             className="pl-9 h-9"
+            data-testid="input-search-prints"
           />
         </div>
       </div>
 
-      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-        {prints.map((print) => (
-          <Card key={print.id} className="group overflow-hidden border-border/50 shadow-sm hover:shadow-md transition-all">
-            <div className="aspect-[4/3] bg-muted/30 relative overflow-hidden">
-              <img 
-                src={print.imageUrl} 
-                alt={print.name} 
-                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-              />
-              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                <Button size="icon" variant="secondary" className="h-8 w-8 rounded-full">
-                  <ExternalLink className="h-4 w-4" />
-                </Button>
-                <Button size="icon" variant="destructive" className="h-8 w-8 rounded-full">
-                  <Trash2 className="h-4 w-4" />
-                </Button>
+      {isLoading ? (
+        <div className="flex justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      ) : (
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          {prints && prints.map((print) => (
+            <Card key={print.id} className="group overflow-hidden border-border/50 shadow-sm hover:shadow-md transition-all" data-testid={`card-print-${print.id}`}>
+              <div className="aspect-[4/3] bg-muted/30 relative overflow-hidden">
+                {print.imageUrl ? (
+                  <img 
+                    src={print.imageUrl} 
+                    alt={print.name} 
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <PaletteIcon className="h-12 w-12 text-muted-foreground/30" />
+                  </div>
+                )}
+                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                  <Button size="icon" variant="secondary" className="h-8 w-8 rounded-full">
+                    <ExternalLink className="h-4 w-4" />
+                  </Button>
+                  <Button size="icon" variant="destructive" className="h-8 w-8 rounded-full">
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
-            </div>
-            <CardHeader className="p-4 pb-2">
-              <CardTitle className="text-base font-serif truncate">{print.name}</CardTitle>
-              <CardDescription className="text-xs">{print.technique}</CardDescription>
-            </CardHeader>
-            <CardContent className="p-4 pt-2">
-              <div className="flex flex-wrap gap-1 mb-3">
-                {print.tags.map(tag => (
-                  <span key={tag} className="text-[10px] px-1.5 py-0.5 bg-secondary/50 rounded-sm text-secondary-foreground">
-                    {tag}
+              <CardHeader className="p-4 pb-2">
+                <CardTitle className="text-base font-serif truncate">{print.name}</CardTitle>
+                <CardDescription className="text-xs">{print.technique}</CardDescription>
+              </CardHeader>
+              <CardContent className="p-4 pt-2">
+                <div className="flex flex-wrap gap-1 mb-3">
+                  {print.tags && print.tags.map(tag => (
+                    <span key={tag} className="text-[10px] px-1.5 py-0.5 bg-secondary/50 rounded-sm text-secondary-foreground">
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+                <div className="flex items-center justify-between text-xs text-muted-foreground border-t border-border/50 pt-2">
+                  <span className="flex items-center gap-1">
+                    <PaletteIcon className="h-3 w-3" /> {print.colors}
                   </span>
-                ))}
-              </div>
-              <div className="flex items-center justify-between text-xs text-muted-foreground border-t border-border/50 pt-2">
-                <span className="flex items-center gap-1">
-                  <PaletteIcon className="h-3 w-3" /> {print.colors}
-                </span>
-                <span>ID: {print.id}</span>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+                  <span>ID: {print.id}</span>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+          {prints && prints.length === 0 && (
+            <div className="col-span-full text-center py-12 text-muted-foreground">
+              Nenhuma estampa encontrada
+            </div>
+          )}
+        </div>
+      )}
     </Layout>
   );
 }

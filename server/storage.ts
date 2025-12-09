@@ -1,38 +1,45 @@
-import { type User, type InsertUser } from "@shared/schema";
-import { randomUUID } from "crypto";
-
-// modify the interface with any CRUD methods
-// you might need
+import { db } from "./db";
+import { clients, suppliers, products, prints, quotes, orders, transactions } from "@shared/schema";
+import type { Client, Supplier, Product, Print, Quote, Order, Transaction } from "@shared/schema";
 
 export interface IStorage {
-  getUser(id: string): Promise<User | undefined>;
-  getUserByUsername(username: string): Promise<User | undefined>;
-  createUser(user: InsertUser): Promise<User>;
+  getClients(): Promise<Client[]>;
+  getSuppliers(): Promise<Supplier[]>;
+  getProducts(): Promise<Product[]>;
+  getPrints(): Promise<Print[]>;
+  getQuotes(): Promise<Quote[]>;
+  getOrders(): Promise<Order[]>;
+  getTransactions(): Promise<Transaction[]>;
 }
 
-export class MemStorage implements IStorage {
-  private users: Map<string, User>;
-
-  constructor() {
-    this.users = new Map();
+export class DatabaseStorage implements IStorage {
+  async getClients(): Promise<Client[]> {
+    return db.select().from(clients);
   }
 
-  async getUser(id: string): Promise<User | undefined> {
-    return this.users.get(id);
+  async getSuppliers(): Promise<Supplier[]> {
+    return db.select().from(suppliers);
   }
 
-  async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.username === username,
-    );
+  async getProducts(): Promise<Product[]> {
+    return db.select().from(products);
   }
 
-  async createUser(insertUser: InsertUser): Promise<User> {
-    const id = randomUUID();
-    const user: User = { ...insertUser, id };
-    this.users.set(id, user);
-    return user;
+  async getPrints(): Promise<Print[]> {
+    return db.select().from(prints);
+  }
+
+  async getQuotes(): Promise<Quote[]> {
+    return db.select().from(quotes);
+  }
+
+  async getOrders(): Promise<Order[]> {
+    return db.select().from(orders);
+  }
+
+  async getTransactions(): Promise<Transaction[]> {
+    return db.select().from(transactions);
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();
