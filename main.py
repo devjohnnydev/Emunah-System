@@ -6,31 +6,40 @@ import sys
 from flask import Flask, request, Response, send_from_directory, jsonify
 
 basedir = os.path.abspath(os.path.dirname(__file__))
+cwd = os.getcwd()
+
+print(f"basedir: {basedir}", flush=True)
+print(f"cwd: {cwd}", flush=True)
 
 possible_static_paths = [
     os.path.join(basedir, 'dist', 'public'),
+    os.path.join(cwd, 'dist', 'public'),
     '/app/dist/public',
     'dist/public',
+    './dist/public',
     os.path.join(basedir, 'public'),
+    os.path.join(cwd, 'public'),
     '/app/public',
     'public',
 ]
 
 static_folder_path = None
 for path in possible_static_paths:
-    index_path = os.path.join(path, 'index.html')
-    if os.path.exists(index_path):
-        static_folder_path = path
-        break
+    abs_path = os.path.abspath(path)
+    index_path = os.path.join(abs_path, 'index.html')
+    exists = os.path.exists(index_path)
+    print(f"Checking: {abs_path} -> index.html exists: {exists}", flush=True)
+    if exists and static_folder_path is None:
+        static_folder_path = abs_path
 
 if static_folder_path is None:
     static_folder_path = os.path.join(basedir, 'dist', 'public')
+    print(f"No static folder found, using default: {static_folder_path}", flush=True)
 
 is_production = os.path.exists(os.path.join(static_folder_path, 'index.html'))
 
 print(f"Mode: {'PRODUCTION' if is_production else 'DEVELOPMENT'}", flush=True)
 print(f"Static folder: {static_folder_path}", flush=True)
-print(f"Checked paths: {possible_static_paths}", flush=True)
 
 if is_production:
     from flask_sqlalchemy import SQLAlchemy
