@@ -515,8 +515,19 @@ else:
         thread = threading.Thread(target=log_output, daemon=True)
         thread.start()
         
-        time.sleep(3)
-        print(f"Node.js server started on port {node_port}", flush=True)
+        for i in range(30):
+            time.sleep(1)
+            try:
+                import socket
+                sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                result = sock.connect_ex(('localhost', node_port))
+                sock.close()
+                if result == 0:
+                    print(f"Node.js server started on port {node_port}", flush=True)
+                    return
+            except:
+                pass
+        print(f"Node.js server started on port {node_port} (timeout)", flush=True)
 
     def cleanup(signum, frame):
         global node_process
