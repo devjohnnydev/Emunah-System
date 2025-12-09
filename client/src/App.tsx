@@ -7,6 +7,10 @@ import NotFound from "@/pages/not-found";
 import Dashboard from "@/pages/dashboard";
 import Quotes from "@/pages/quotes";
 import Orders from "@/pages/orders";
+import Suppliers from "@/pages/suppliers";
+import Products from "@/pages/products";
+import Prints from "@/pages/prints";
+import Finance from "@/pages/finance";
 
 function Router() {
   return (
@@ -14,12 +18,13 @@ function Router() {
       <Route path="/" component={Dashboard} />
       <Route path="/quotes" component={Quotes} />
       <Route path="/orders" component={Orders} />
+      <Route path="/suppliers" component={Suppliers} />
+      <Route path="/products" component={Products} />
+      <Route path="/prints" component={Prints} />
+      <Route path="/finance" component={Finance} />
+      
       {/* Placeholder pages for routes not yet implemented but in sidebar */}
       <Route path="/clients" component={() => <div className="p-8 text-center text-muted-foreground">Página de Clientes em construção</div>} />
-      <Route path="/suppliers" component={() => <div className="p-8 text-center text-muted-foreground">Página de Fornecedores em construção</div>} />
-      <Route path="/products" component={() => <div className="p-8 text-center text-muted-foreground">Página de Produtos em construção</div>} />
-      <Route path="/prints" component={() => <div className="p-8 text-center text-muted-foreground">Página de Estampas em construção</div>} />
-      <Route path="/finance" component={() => <div className="p-8 text-center text-muted-foreground">Página de Financeiro em construção</div>} />
       
       <Route component={NotFound} />
     </Switch>
