@@ -3,50 +3,41 @@ from flask import Flask, request, jsonify, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import text
 from datetime import datetime, date
-import time
+from werkzeug.middleware.proxy_fix import ProxyFix
 
+# Configuração de caminhos
 basedir = os.path.abspath(os.path.dirname(__file__))
+STATIC_FOLDER = os.path.join(basedir, 'dist', 'public')
 
-cwd = os.getcwd()
+# Garantir que a pasta existe
+os.makedirs(STATIC_FOLDER, exist_ok=True)
 
-possible_static_paths = [
-    os.path.join(basedir, 'dist', 'public'),
-    os.path.join(cwd, 'dist', 'public'),
-    os.path.join(basedir, 'build'),
-    os.path.join(cwd, 'build'),
-    os.path.join(basedir, 'public'),
-    os.path.join(cwd, 'public'),
-    os.path.join(basedir, 'dist'),
-    os.path.join(cwd, 'dist'),
-]
+# Verificar se há index.html (build existe)
+has_build = os.path.exists(os.path.join(STATIC_FOLDER, 'index.html'))
 
-static_folder_path = None
-for path in possible_static_paths:
-    abs_path = os.path.abspath(path)
-    index_path = os.path.join(abs_path, 'index.html')
-    if os.path.exists(index_path):
-        static_folder_path = abs_path
-        break
+print(f"[EMUNAH] Static folder: {STATIC_FOLDER}", flush=True)
+print(f"[EMUNAH] Build exists: {has_build}", flush=True)
 
-if static_folder_path is None:
-    static_folder_path = os.path.join(basedir, 'dist', 'public')
-    os.makedirs(static_folder_path, exist_ok=True)
-    print(f"Static folder created: {static_folder_path}", flush=True)
+# Criar aplicação Flask
+app = Flask(__name__, static_folder=STATIC_FOLDER, static_url_path='')
+app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
+app.secret_key = os.environ.get('SESSION_SECRET', 'dev-secret-key-change-in-production')
 
-print(f"Static folder path: {static_folder_path}", flush=True)
-print(f"Static folder exists: {os.path.exists(static_folder_path)}", flush=True)
-
-app = Flask(__name__, static_folder=static_folder_path, static_url_path='')
-
+# Configuração do banco de dados
 database_url = os.environ.get('DATABASE_URL')
 if database_url and database_url.startswith('postgres://'):
     database_url = database_url.replace('postgres://', 'postgresql://', 1)
 
 app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['SECRET_KEY'] = os.environ.get('SESSION_SECRET', 'prod-secret-key')
+app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+    'pool_recycle': 300,
+    'pool_pre_ping': True,
+}
 
 db = SQLAlchemy(app)
+
+# ============ MODELOS ============
 
 class Client(db.Model):
     __tablename__ = 'clients'
@@ -136,12 +127,15 @@ class Transaction(db.Model):
     transaction_date = db.Column(db.Date, default=date.today)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
+# Criar tabelas
 with app.app_context():
     db.create_all()
 
+# ============ ROTAS DA API ============
+
 @app.route('/api/health')
 def health():
-    return jsonify({'status': 'ok'})
+    return jsonify({'status': 'ok', 'build': has_build})
 
 @app.route('/api/clients', methods=['GET'])
 def get_clients():
@@ -297,16 +291,6 @@ def create_print():
         print(f"Error creating print: {e}")
         db.session.rollback()
         return jsonify({'error': 'Failed to create print'}), 500
-
-@app.route('/api/prints/upload', methods=['POST'])
-def upload_print():
-    try:
-        timestamp = int(time.time() * 1000)
-        placeholder_url = f'/uploads/print_{timestamp}.png'
-        return jsonify({'url': placeholder_url})
-    except Exception as e:
-        print(f"Error uploading print: {e}")
-        return jsonify({'error': 'Failed to upload print'}), 500
 
 @app.route('/api/quotes', methods=['GET'])
 def get_quotes():
@@ -492,21 +476,27 @@ def get_dashboard_stats():
         print(f"Error fetching dashboard stats: {e}")
         return jsonify({'error': 'Failed to fetch dashboard stats'}), 500
 
+# ============ SERVIR ARQUIVOS ESTÁTICOS ============
+
 @app.route('/', defaults={'path': ''})
 @app.route('/<path:path>')
 def serve(path):
-    try:
-        if not app.static_folder or not os.path.exists(app.static_folder):
-            return jsonify({'error': 'Static folder not found', 'path': app.static_folder}), 500
-        if path and os.path.exists(os.path.join(app.static_folder, path)):
-            return send_from_directory(app.static_folder, path)
-        index_path = os.path.join(app.static_folder, 'index.html')
-        if os.path.exists(index_path):
-            return send_from_directory(app.static_folder, 'index.html')
-        return jsonify({'error': 'index.html not found', 'static_folder': app.static_folder}), 404
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+    if not has_build:
+        return jsonify({
+            'error': 'Build not found',
+            'message': 'Execute npm run build para gerar os arquivos do frontend',
+            'static_folder': STATIC_FOLDER
+        }), 503
+    
+    if path and os.path.exists(os.path.join(STATIC_FOLDER, path)):
+        response = send_from_directory(STATIC_FOLDER, path)
+        response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+        return response
+    
+    response = send_from_directory(STATIC_FOLDER, 'index.html')
+    response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    return response
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port, debug=False)
+    app.run(host='0.0.0.0', port=port, debug=True)
