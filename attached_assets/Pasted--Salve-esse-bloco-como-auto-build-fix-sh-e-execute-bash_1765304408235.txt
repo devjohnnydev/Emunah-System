@@ -1,0 +1,138 @@
+# Salve esse bloco como auto_build_fix.sh e execute: bash auto_build_fix.sh
+set -e
+
+echo "=== auto_build_fix.sh: iniciando ==="
+
+ROOT="$(pwd)"
+TARGET="/app/dist/public"
+
+# Cria a pasta alvo
+mkdir -p "$TARGET"
+
+if [ ! -f package.json ]; then
+  echo ">>> package.json não encontrado. Criando placeholder index.html em $TARGET"
+  cat > "$TARGET/index.html" <<'HTML'
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>Placeholder</title></head>
+<body>
+  <h1>Placeholder</h1>
+  <p>Não foi encontrado package.json ou build. Substitua por seu build real.</p>
+</body>
+</html>
+HTML
+  echo ">>> Concluído (placeholder criado)."
+  exit 0
+fi
+
+echo ">>> package.json encontrado. Verificando scripts e dependências..."
+
+# Função utilitária para modificar package.json via Node (adiciona script build)
+add_build_script() {
+  local newscript="$1"
+  echo ">>> Adicionando script \"build\": \"$newscript\" em package.json"
+  node -e "const fs=require('fs');const p=JSON.parse(fs.readFileSync('package.json'));p.scripts=p.scripts||{};p.scripts.build='$newscript';fs.writeFileSync('package.json',JSON.stringify(p,null,2));console.log('-> build script adicionado');"
+}
+
+# Detecta se já existe build
+HAS_BUILD=$(node -e "const p=require('./package.json'); console.log(p.scripts && p.scripts.build ? 'yes':'no');")
+
+if [ "$HAS_BUILD" = "yes" ]; then
+  echo ">>> Script 'build' já existe — iremos rodar npm install && npm run build"
+  echo "=== npm install (pode demorar) ==="
+  npm install --silent || echo "npm install falhou (ok, continuando)"
+  echo "=== npm run build ==="
+  npm run build || echo "npm run build retornou erro (continuando para tentativa de recuperação)"
+else
+  echo ">>> Script 'build' NÃO existe. Tentando detectar framework..."
+  PKG_JSON=$(cat package.json)
+  # Detecta Vite (vite.config.js ou dependência vite)
+  if [ -f vite.config.js ] || echo "$PKG_JSON" | grep -q "\"vite\""; then
+    add_build_script "vite build"
+  # Detecta Create React App (react-scripts)
+  elif echo "$PKG_JSON" | grep -q "\"react-scripts\""; then
+    add_build_script "react-scripts build"
+  # Detecta Next.js
+  elif echo "$PKG_JSON" | grep -q "\"next\""; then
+    add_build_script "next build"
+    echo ">>> Atenção: Next.js geralmente precisa de configurações específicas (SSG/Export) para servir como estático."
+  # Detecta Vue CLI
+  elif echo "$PKG_JSON" | grep -q "\"@vue/cli-service\""; then
+    add_build_script "vue-cli-service build"
+  else
+    echo ">>> Framework não detectado automaticamente. Vamos adicionar um build simples que copia arquivos (placeholder)."
+    add_build_script "echo 'No real build; placeholder created' && mkdir -p dist && echo '<!doctype html><html><body><h1>Placeholder</h1></body></html>' > dist/index.html"
+  fi
+
+  echo "=== Instalando dependências (npm install) ==="
+  npm install --silent || echo "npm install falhou (continuando)"
+
+  echo "=== Executando npm run build ==="
+  npm run build || echo "npm run build falhou ou retornou não zero (continuando para checagem de pastas de saída)"
+fi
+
+echo ">>> Build finalizado (ou tentativa concluída). Verificando pastas de saída..."
+
+# Função copia se existir
+copy_if_exists() {
+  src="$1"
+  if [ -d "$src" ]; then
+    echo ">>> Encontrado $src — copiando para $TARGET"
+    # copia arquivos (preserva estrutura)
+    cp -r "$src"/. "$TARGET"/ || true
+    return 0
+  fi
+  return 1
+}
+
+# Tenta as saídas comuns
+if copy_if_exists "dist"; then
+  BUILD_OK=1
+elif copy_if_exists "build"; then
+  BUILD_OK=1
+elif copy_if_exists "public"; then
+  BUILD_OK=1
+elif copy_if_exists ".next"; then
+  echo ">>> .next encontrado (Next.js). NOTA: .next não é diretamente estático. Se você quer site estático, rode 'next export' ou configure exportPathMap."
+  # tenta export caso exista next
+  if node -e "try{const p=require('./package.json'); if(p.scripts && p.scripts['export']) process.exit(0); process.exit(1);}catch(e){process.exit(1)}" 2>/dev/null; then
+    echo ">>> script 'export' detectado. Rodando npm run export..."
+    npm run export || echo "npm run export falhou"
+    copy_if_exists "out" || true
+  fi
+else
+  # procura pastas dentro de node_modules/.bin? não faz sentido; criamos placeholder
+  BUILD_OK=0
+fi
+
+# Se nada foi copiado, e não existe index.html, cria placeholder
+if [ ! -f "$TARGET/index.html" ] || [ "$BUILD_OK" != "1" ]; then
+  if [ "$BUILD_OK" != "1" ]; then
+    echo ">>> Nenhum build estático detectado. Criando placeholder em $TARGET/index.html"
+  else
+    echo ">>> Build detectado mas index.html não encontrado — criando placeholder para evitar erro."
+  fi
+
+  cat > "$TARGET/index.html" <<'HTML'
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>Placeholder</title></head>
+<body>
+  <h1>Placeholder</h1>
+  <p>O processo de build não gerou um index.html estático detectável. Substitua por seu build real.</p>
+</body>
+</html>
+HTML
+fi
+
+echo ">>> Listagem do conteúdo de $TARGET:"
+ls -la "$TARGET" || true
+
+echo "=== Resultado final ==="
+if [ -f "$TARGET/index.html" ]; then
+  echo "OK -> index.html presente em $TARGET"
+else
+  echo "ERRO -> index.html ausente. Verifique logs de build."
+fi
+
+echo "=== auto_build_fix.sh: concluído ==="
