@@ -1,0 +1,87 @@
+You reached the start of the range
+Dec 9, 2025, 11:50 AM
+scheduling build on Metal builder "builder-pojtuv"
+[snapshot] received sha256:020da0d07c95255cec9fd61ef98e9a6820c000e01f95e986f8880114193ddddc md5:6c99a36c673718812caf6f765f338fb1
+receiving snapshot
+3.2 MB
+1.2s
+analyzing snapshot
+3.2 MB
+49ms
+uploading snapshot
+3.2 MB
+150ms
+scheduling build on Metal builder "builder-pojtuv"
+fetched snapshot sha256:020da0d07c95255cec9fd61ef98e9a6820c000e01f95e986f8880114193ddddc (3.3 MB bytes)
+fetching snapshot
+3.2 MB
+307ms
+unpacking archive
+4.1 MB
+65ms
+using build driver railpack-v0.6.0
+                  
+╭────────────────╮
+│ Railpack 0.6.0 │
+╰────────────────╯
+ 
+  ↳ Detected Python
+  ↳ Using uv
+            
+  Packages  
+  ──────────
+  pipx:uv  │  0.9.16   │  railpack default (latest)
+  python   │  3.11.14  │  railpack default (3.11)
+  pipx     │  1.8.0    │  railpack default (latest)
+            
+  Steps     
+  ──────────
+  ▸ install
+    $ uv sync --locked --no-dev --no-install-project
+         
+  ▸ build
+    $ uv sync --locked --no-dev --no-editable
+            
+  Deploy    
+  ──────────
+    $ gunicorn app:app
+ 
+
+load build definition from ./railpack-plan.json
+0ms
+
+install apt packages: libpq-dev python3-dev
+5s
+Processing triggers for libc-bin (2.36-9+deb12u13) ...
+
+install mise packages: pipx, pipx:uv, python
+10s
+mise pipx:uv@0.9.16 ✓ installed
+
+copy pyproject.toml, uv.lock, /mise/shims
+515ms
+
+install apt packages: libpq5 cached
+51ms
+
+uv sync --locked --no-dev --no-install-project
+1s
+4
+
+copy /mise/installs, / /app, /usr/local/bin/mise
+1s
+
+uv sync --locked --no-dev --no-editable
+824ms
+Bytecode compiled 720 files in 129ms
+
+copy /etc/mise/config.toml, /root/.local/state/mise, /app, /app/.venv
+1s
+
+exporting to docker image format
+2s
+containerimage.digest: sha256:c9b2972fe0361cb245e83edc8d2f15216bb225506e0217a43bab81f29d7403ee
+containerimage.descriptor: eyJtZWRpYVR5cGUiOiJhcHBsaWNhdGlvbi92bmQub2NpLmltYWdlLm1hbmlmZXN0LnYxK2pzb24iLCJkaWdlc3QiOiJzaGEyNTY6YzliMjk3MmZlMDM2MWNiMjQ1ZTgzZWRjOGQyZjE1MjE2YmIyMjU1MDZlMDIxN2E0M2JhYjgxZjI5ZDc0MDNlZSIsInNpemUiOjIyMDEsImFubm90YXRpb25zIjp7Im9yZy5vcGVuY29udGFpbmVycy5pbWFnZS5jcmVhdGVkIjoiMjAyNS0xMi0wOVQxNDo1NjozOFoifSwicGxhdGZvcm0iOnsiYXJjaGl0ZWN0dXJlIjoiYW1kNjQiLCJvcyI6ImxpbnV4In19
+containerimage.config.digest: sha256:569b6ed61fb865b9d57fc9554177c4437216164a7d36182d9849e8c2f6cc9def
+image push
+121 MB / 121 MB
