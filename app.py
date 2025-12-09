@@ -6,12 +6,25 @@ from datetime import datetime, date
 import time
 
 basedir = os.path.abspath(os.path.dirname(__file__))
-static_folder_path = os.path.join(basedir, 'dist', 'public')
 
-if not os.path.exists(static_folder_path):
-    static_folder_path = '/app/dist/public'
-if not os.path.exists(static_folder_path):
-    static_folder_path = 'dist/public'
+possible_static_paths = [
+    os.path.join(basedir, 'dist', 'public'),
+    '/app/dist/public',
+    'dist/public',
+    os.path.join(basedir, 'public'),
+    '/app/public',
+    'public',
+]
+
+static_folder_path = None
+for path in possible_static_paths:
+    if os.path.exists(path) and os.path.isdir(path):
+        static_folder_path = path
+        break
+
+if static_folder_path is None:
+    static_folder_path = os.path.join(basedir, 'dist', 'public')
+    os.makedirs(static_folder_path, exist_ok=True)
 
 print(f"Static folder path: {static_folder_path}", flush=True)
 print(f"Static folder exists: {os.path.exists(static_folder_path)}", flush=True)

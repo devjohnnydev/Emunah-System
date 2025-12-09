@@ -6,12 +6,31 @@ import sys
 from flask import Flask, request, Response, send_from_directory, jsonify
 
 basedir = os.path.abspath(os.path.dirname(__file__))
-static_folder_path = os.path.join(basedir, 'dist', 'public')
+
+possible_static_paths = [
+    os.path.join(basedir, 'dist', 'public'),
+    '/app/dist/public',
+    'dist/public',
+    os.path.join(basedir, 'public'),
+    '/app/public',
+    'public',
+]
+
+static_folder_path = None
+for path in possible_static_paths:
+    index_path = os.path.join(path, 'index.html')
+    if os.path.exists(index_path):
+        static_folder_path = path
+        break
+
+if static_folder_path is None:
+    static_folder_path = os.path.join(basedir, 'dist', 'public')
 
 is_production = os.path.exists(os.path.join(static_folder_path, 'index.html'))
 
 print(f"Mode: {'PRODUCTION' if is_production else 'DEVELOPMENT'}", flush=True)
 print(f"Static folder: {static_folder_path}", flush=True)
+print(f"Checked paths: {possible_static_paths}", flush=True)
 
 if is_production:
     from flask_sqlalchemy import SQLAlchemy
